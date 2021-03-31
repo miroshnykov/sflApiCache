@@ -19,7 +19,7 @@ config.redis = {
 }
 
 config.recipe = {
-    folder: '/tmp/recipe_sfl_api/'
+    folder: '/tmp/recipe_sfl_api_cache/'
 }
 
 config.influxdb = {

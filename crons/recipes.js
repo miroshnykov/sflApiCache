@@ -21,7 +21,6 @@ const setFileSizeInfo = async () => {
 
     console.log('setFileSizeInfo')
     // if (config.env === 'development' || config.env === 'staging') return
-    console.log('\n\n\n ****  SET fileSizeInfo && blockedIp ****')
     try {
         let files = await getLocalFiles(config.recipe.folder)
         const computerName = os.hostname()
@@ -31,66 +30,57 @@ const setFileSizeInfo = async () => {
             metrics.influxdb(500, `fileSizeAllRecipeNotExists`)
             return
         }
-        let file1 = files[0] // aff website
-        let file2 = files[1] //aff
-        let file3 = files[2]//camp
-        let file4 = files[3]//offer
-        let fileSizeOffer
-        let fileSizeCampaign
-        let fileSizeAffiliates
-        let fileSizeAffiliateWebsites
+        let file1 = files[0] // acProductsData
+        let file2 = files[1] //affiliateProductProgram
+        let file3 = files[2]//refCodesData
+        let fileSizeAcProductsData
+        let fileSizeAffiliateProductProgram
+        let fileSizeRefCodesData
 
 
         if (file1) {
-            fileSizeAffiliateWebsites = await getFileSize(file1) || 0
+            fileSizeAcProductsData = await getFileSize(file1) || 0
         } else {
-            metrics.influxdb(500, `fileSizeAffilaiteWebsitesNotExists-${computerName}`)
+            metrics.influxdb(500, `fileSizeacProductsDataNotExists-${computerName}`)
         }
 
         if (file2) {
-            fileSizeAffiliates = await getFileSize(file2) || 0
+            fileSizeAffiliateProductProgram = await getFileSize(file2) || 0
         } else {
             metrics.influxdb(500, `fileSizeAffilaitesNotExists-${computerName}`)
         }
 
 
         if (file3) {
-            fileSizeCampaign = await getFileSize(file3) || 0
+            fileSizeRefCodesData = await getFileSize(file3) || 0
         } else {
-            metrics.influxdb(500, `fileSizeCampaignsNotExists-${computerName}`)
+            metrics.influxdb(500, `fileSizeRefCodesDataNotExists-${computerName}`)
         }
 
 
-        if (file4) {
-            fileSizeOffer = await getFileSize(file4) || 0
-        } else {
-            metrics.influxdb(500, `fileSizeOffersNotExists-${computerName}`)
-        }
+        console.log(`File size for computerName:${computerName}  
+                    fileSizeAcProductsData:${fileSizeAcProductsData}, 
+                    fileSizeAffiliateProductProgram:${fileSizeAffiliateProductProgram},  
+                    fileSizeRefCodesData:${fileSizeRefCodesData}`
+        )
 
-
-        console.log(`File size for computerName:${computerName}  fileSizeAffiliates:${fileSizeAffiliates}, fileSizeCampaign:${fileSizeCampaign}, fileSizeOffer:${fileSizeOffer}, fileSizeAffiliateWebsites:${fileSizeAffiliateWebsites}`)
-
-        // console.log('fileSizeOffer:', fileSizeOffer)
-        // console.log('fileSizeCampaign:', fileSizeCampaign)
         let fileSizeInfo = {}
-        if (fileSizeOffer) {
-            fileSizeInfo.offer = Number(fileSizeOffer)
+
+        if (fileSizeAcProductsData) {
+            fileSizeInfo.acProductsData = Number(fileSizeAcProductsData)
         }
-        if (fileSizeCampaign) {
-            fileSizeInfo.campaign = Number(fileSizeCampaign)
-        }
-        if (fileSizeAffiliates) {
-            fileSizeInfo.affiliates = Number(fileSizeAffiliates)
+        if (fileSizeAffiliateProductProgram) {
+            fileSizeInfo.affiliateProductProgram = Number(fileSizeAffiliateProductProgram)
         }
 
-        if (fileSizeAffiliateWebsites) {
-            fileSizeInfo.affiliateWebsites = Number(fileSizeAffiliateWebsites)
+        if (fileSizeRefCodesData) {
+            fileSizeInfo.refCodesData = Number(fileSizeRefCodesData)
         }
 
-        console.log(`Set fileSizeInfo:${JSON.stringify(fileSizeInfo)}`)
-        await setDataCache(`fileSizeInfo`, fileSizeInfo)
+        console.log(`Set fileSizeRefCode:${JSON.stringify(fileSizeInfo)}`)
+        await setDataCache(`fileSizeRefCode`, fileSizeInfo)
 
-        metrics.sendMetricsSystem(fileSizeInfo, 0)
+        // metrics.sendMetricsSystem(fileSizeInfo, 0)
 
     } catch (e) {
         console.log('getFilesSizeError:', e)
