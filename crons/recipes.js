@@ -131,7 +131,7 @@ const setRecipeFilesAcProducts = async () => {
         console.log(`\nCreate files AcProducts, computerName:${computerName}, files:${JSON.stringify(files)}, ConfigRecipeFolder:${JSON.stringify(config.recipe)}  `)
         if (files.length === 0) {
             console.log(`no files in folder:${JSON.stringify(config.recipe)} created `)
-            // await createRecipeAcProducts()
+            await createRecipeAcProducts()
             metrics.influxdb(200, `createRecipeAcProducts_${computerName}`)
             return
         }
@@ -162,7 +162,7 @@ const setRecipeFilesRefCodes = async () => {
         console.log(`\nCreate files AcProducts, computerName:${computerName}, files:${JSON.stringify(files)}, ConfigRecipeFolder:${JSON.stringify(config.recipe)}  `)
         if (files.length === 0) {
             console.log(`no files in folder:${JSON.stringify(config.recipe)} created `)
-            // await createRecipeAcProducts()
+            await createRecipeRefCodes()
             metrics.influxdb(200, `createRecipeAcProducts_${computerName}`)
             return
         }
