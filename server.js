@@ -96,7 +96,7 @@ app.get('/forceCreateRecipe', async (req, res, next) => {
 
 
 // http://localhost:8092/files
-
+// https://sfl-api-cache-stage1.surge.systems/files
 app.get('/files', async (req, res, next) => {
     let response = {}
 
@@ -199,7 +199,34 @@ io.on('connection', async (socket) => {
         }
     }
 
-    socket.on('sendFileAffiliateWebsites', async () => {
+    socket.on('sendingAffiliateProductProgram', async () => {
+
+        try {
+            let files = await getLocalFiles(config.recipe.folder)
+
+            // console.log('FILE:',files)
+            let file = files[1]
+            if (!file) {
+                console.log(`no files in folder:${config.recipe.folder}`)
+                return
+            }
+            let stream = ss.createStream();
+            stream.on('end', () => {
+                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                metrics.influxdb(200, `sendFileAffiliateProductProgram`)
+            });
+            ss(socket).emit('sendingAffiliateProductProgram', stream);
+            fs.createReadStream(file).pipe(stream);
+
+        } catch (e) {
+            console.log('sendFileAffiliateProductProgramError:', e)
+            metrics.influxdb(500, `sendFileAffiliateProductProgramError`)
+        }
+
+    })
+
+    // acProductsData
+    socket.on('sendingAcProducts', async () => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
@@ -213,25 +240,51 @@ io.on('connection', async (socket) => {
             let stream = ss.createStream();
             stream.on('end', () => {
                 console.log(`file:${file} sent to soket ID:${socket.id}`);
-                metrics.influxdb(200, `sendFileAffiliateWebsites`)
+                metrics.influxdb(200, `sendFileAcProducts`)
             });
-            ss(socket).emit('sendingAffiliateWebsites', stream);
+            ss(socket).emit('sendingAcProducts', stream);
             fs.createReadStream(file).pipe(stream);
 
         } catch (e) {
-            console.log('sendFileAffiliatesError:', e)
-            metrics.influxdb(500, `sendFileAffiliatesError`)
+            console.log('sendFileAcProductsError:', e)
+            metrics.influxdb(500, `sendFileAcProductsError`)
         }
 
     })
 
+// refCodesData
+    socket.on('sendingRefCodes', async () => {
+
+        try {
+            let files = await getLocalFiles(config.recipe.folder)
+
+            // console.log('FILE:',files)
+            let file = files[2]
+            if (!file) {
+                console.log(`no files in folder:${config.recipe.folder}`)
+                return
+            }
+            let stream = ss.createStream();
+            stream.on('end', () => {
+                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                metrics.influxdb(200, `sendFilesRefCodes`)
+            });
+            ss(socket).emit('sendingRefCodes', stream);
+            fs.createReadStream(file).pipe(stream);
+
+        } catch (e) {
+            console.log('sendFilesRefCodesError:', e)
+            metrics.influxdb(500, `sendFilesRefCodesError`)
+        }
+
+    })
 
     socket.on('disconnect', () => {
-        clients.splice(clients.indexOf(socket.id, 1))
-        metrics.sendMetricsCountOfClients(clients.length)
+        // clients.splice(clients.indexOf(socket.id, 1))
+        // metrics.sendMetricsCountOfClients(clients.length)
 
         console.log(`disconnect ${socket.id}, Count of client: ${clients.length} `);
-        clearInterval(updRedis[socket.id])
+        // clearInterval(updRedis[socket.id])
         // console.log(`disconnect clients:`, clients);
         // metrics.influxdb(200, `disconnect`)
     })
@@ -257,14 +310,18 @@ const {
 } = require(`./crons/recipes`)
 
 
+setInterval(setFileSizeInfo, 900000) // 900000 -> 15 min
+setTimeout(setFileSizeInfo, 60000) // 60000 -> 1 min
+
+
 setInterval(setRecipeFilesAffiliateProductProgram, 2472000) // 2472000 -> 41.2 min
-// setTimeout(setRecipeFilesAffiliateProductProgram, 9000) // 45000 -> 45 sec
+setTimeout(setRecipeFilesAffiliateProductProgram, 60000) // 60000 -> 1 min
 
 setInterval(setRecipeFilesAcProducts, 2712000) // 2712000 -> 45.2 min
-// setTimeout(setRecipeFilesAcProducts, 12000) // 45000 -> 45 sec
+setTimeout(setRecipeFilesAcProducts, 120000) // 120000 -> 2 min
 
 setInterval(setRecipeFilesRefCodes, 3012000) // 3012000 -> 50.2 min
-// setTimeout(setRecipeFilesRefCodes, 14000) // 45000 -> 45 sec
+setTimeout(setRecipeFilesRefCodes, 180000) // 180000 -> 3 min
 
 
 

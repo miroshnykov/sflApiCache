@@ -19,7 +19,7 @@ RUN apt-get install \
 RUN curl --silent --location https://deb.nodesource.com/setup_12.x | bash -
 RUN apt-get install --yes nodejs
 
-RUN mkdir /tmp/recipe_sfl_api
+RUN mkdir /tmp/recipe_sfl_api_cache
 RUN chmod 755 /tmp
 
 WORKDIR /home/app
