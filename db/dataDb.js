@@ -14,6 +14,7 @@ const getRefCodes = async () => {
                        a.affiliate_type AS affiliateType,       
                        r.campaign_id AS campaignId,
                        r.program_id AS programId,
+                       (SELECT p.name FROM programs p WHERE p.id = r.program_id) AS programName,                        
                        r.product_id AS productId,
                        a.is_traffic_blocked AS isTrafficBlocked,
                        a.is_lock_payment AS isLockPayment                       
@@ -50,7 +51,7 @@ const getAffiliateProductProgram = async () => {
 const getAcProducts = async () => {
     try {
         let result = await dbMysql.query(` 
-                SELECT program_id as programId,id
+                SELECT program_id as programId,id, name AS productName
                 FROM ac_products                                            
         `)
         await dbMysql.end()
