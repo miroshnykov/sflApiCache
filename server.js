@@ -190,7 +190,7 @@ io.on('connection', async (socket) => {
 
         if (clients.length < LIMIT_CLIENTS) {
             clients.push(socket.id)
-            metrics.sendMetricsCountOfClients(clients.length)
+            // metrics.sendMetricsCountOfClients(clients.length)
             // metrics.influxdb(200, `countOfClients-${clients.length}`)
             console.log(`New client just connected: ${socket.id} clientCount:${clients.length} `)
         } else {
@@ -207,7 +207,7 @@ io.on('connection', async (socket) => {
             // console.log('FILE:',files)
             let file = files[1]
             if (!file) {
-                console.log(`no files in folder:${config.recipe.folder}`)
+                console.log(`no file AffiliateProductProgram in folder:${config.recipe.folder}`)
                 return
             }
             let stream = ss.createStream();
@@ -234,7 +234,7 @@ io.on('connection', async (socket) => {
             // console.log('FILE:',files)
             let file = files[0]
             if (!file) {
-                console.log(`no files in folder:${config.recipe.folder}`)
+                console.log(`no files AcProducts in folder:${config.recipe.folder}`)
                 return
             }
             let stream = ss.createStream();
@@ -261,7 +261,7 @@ io.on('connection', async (socket) => {
             // console.log('FILE:',files)
             let file = files[2]
             if (!file) {
-                console.log(`no files in folder:${config.recipe.folder}`)
+                console.log(`no files  RefCodes in folder:${config.recipe.folder}`)
                 return
             }
             let stream = ss.createStream();
@@ -280,9 +280,7 @@ io.on('connection', async (socket) => {
     })
 
     socket.on('disconnect', () => {
-        // clients.splice(clients.indexOf(socket.id, 1))
-        // metrics.sendMetricsCountOfClients(clients.length)
-
+        clients.splice(clients.indexOf(socket.id, 1))
         console.log(`disconnect ${socket.id}, Count of client: ${clients.length} `);
         // clearInterval(updRedis[socket.id])
         // console.log(`disconnect clients:`, clients);
@@ -315,6 +313,7 @@ setTimeout(setFileSizeInfo, 60000) // 60000 -> 1 min
 
 
 setInterval(setRecipeFilesAffiliateProductProgram, 2472000) // 2472000 -> 41.2 min
+// setInterval(setRecipeFilesAffiliateProductProgram, 11000000) // 11000000 -> 3.05 h
 setTimeout(setRecipeFilesAffiliateProductProgram, 60000) // 60000 -> 1 min
 
 setInterval(setRecipeFilesAcProducts, 2712000) // 2712000 -> 45.2 min

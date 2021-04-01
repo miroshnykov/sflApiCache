@@ -147,7 +147,7 @@ const setRecipeFilesAcProducts = async () => {
         metrics.influxdb(200, `createRecipeAcProducts-${computerName}`)
     } catch (e) {
         metrics.influxdb(500, `createRecipeAcProductsError-${computerName}`)
-        console.log('create files createRecipeAffiliateProductProgram error:', e)
+        console.log('create files createRecipeAcProducts error:', e)
     }
 
 }
