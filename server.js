@@ -6,7 +6,7 @@ const socketIO = require('socket.io')
 const app = express()
 const server = http.createServer(app);
 const io = socketIO(server)
-const {getFileSize, formatByteSize} = require('./lib/helper')
+const {getFileSize, formatByteSize, parseFiles} = require('./lib/helper')
 const {
     getLocalFiles
 } = require('./lib/zipRecipe')
@@ -38,56 +38,30 @@ app.get('/forceCreateRecipe', async (req, res, next) => {
     let response = {}
     try {
 
-        let refCodes = await getRefCodes()
-        let acProducts = await getAcProducts()
-        let affiliateProductProgram = await getAffiliateProductProgram()
-        response.refCodes = refCodes
+        // let refCodes = await getRefCodes()
+        // let acProducts = await getAcProducts()
+        // let affiliateProductProgram = await getAffiliateProductProgram()
+        // response.refCodes = refCodes
         // response.acProducts = acProducts
-        response.affiliateProductProgram = affiliateProductProgram
+        // response.affiliateProductProgram = affiliateProductProgram
         // res.send(response)
         // return
         let files = await getLocalFiles(config.recipe.folder)
-        console.log('forceCreateRecipeFileDebug:', files)
-        console.log('forceCreateRecipeRecipe:', config.recipe)
+        // console.log('forceCreateRecipeFileDebug:', files)
+        // console.log('forceCreateRecipeRecipe:', config.recipe)
         response.files = files
         response.configRecipe = config.recipe
 
-        if (files.length === 0) {
-            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)} created `
-            await createRecipeAffiliateProductProgram()
+        let filesInfo = parseFiles(files)
 
-            await waitFor(5000)
-
-            let files = await getLocalFiles(config.recipe.folder)
-            response.filesJustCreated = files
-
-            let size1AffiliateProductProgram = await getFileSize(files[0])// affWebsite
-            // response.files1Size = formatByteSize(size1AffWe)
-            // response.files2Size = formatByteSize(size2Aff)
-            // response.files3Size = formatByteSize(size3Camp)
-            // response.files4Size = formatByteSize(size4Offer)
-            response.sizeAffiliateProductProgram = size1AffiliateProductProgram
-
-            res.send(response)
-            return
-        }
-        let file1 = files[0]
-        if (file1) {
-            await deleteFile(file1)
-            response.file1Deleted = file1
+        response.deleted = []
+        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
+            await deleteFile(affiliateProductProgram.file)
+            response.deleted.push(affiliateProductProgram.file)
         }
 
         await createRecipeAffiliateProductProgram()
-
-        if (file1 ) {
-            response.files1 = `${files[0]}`
-            response.done = 'recipe created'
-        } else {
-            response.done = 'files does not exists. but Recipe created first time '
-        }
-
         res.send(response)
-
     } catch (e) {
         response.err = 'error recipe' + JSON.stringify(e)
         res.send(response)
@@ -108,18 +82,48 @@ app.get('/files', async (req, res, next) => {
             res.send(response)
             return
         }
-
+        let filesInfo = parseFiles(files)
         response.files = files
-        response.files1 = files[0]
-        response.files2 = files[1]
-        response.files3 = files[2]
-        let sizeAcProducts = await getFileSize(files[0])
-        let sizeAffiliateProductProgram = await getFileSize(files[1])
-        let sizeRefCodes = await getFileSize(files[2])
-        response.sizeAcProducts = sizeAcProducts
-        response.sizeAffiliateProductProgram = sizeAffiliateProductProgram
-        response.sizeRefCodes = sizeRefCodes
-        response.countsOfClients = clients.length || 0
+
+        let refCodeInfo = []
+        let affiliateProductProgramInfo = []
+        let acProductsInfo = []
+        for (const refCodeFile of filesInfo.refCodesData) {
+            let sizerefCodeFileSize = await getFileSize(refCodeFile.file)
+
+            refCodeInfo.push(
+                {
+                    index: refCodeFile.index,
+                    file: refCodeFile.file,
+                    size: sizerefCodeFileSize
+                })
+        }
+
+        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
+            let sizeAffiliateProductProgram = await getFileSize(affiliateProductProgram.file)
+
+            affiliateProductProgramInfo.push(
+                {
+                    index: affiliateProductProgram.index,
+                    file: affiliateProductProgram.file,
+                    size: sizeAffiliateProductProgram
+                })
+        }
+
+        for (const acProducts of filesInfo.acProductsData) {
+            let sizeAcProducts = await getFileSize(acProducts.file)
+            acProductsInfo.push(
+                {
+                    index: acProducts.index,
+                    file: acProducts.file,
+                    size: sizeAcProducts
+                })
+        }
+
+        response.refCodeInfo = refCodeInfo
+        response.affiliateProductProgramInfo = affiliateProductProgramInfo
+        response.acProductsInfo = acProductsInfo
+
 
         const computerName = os.hostname()
         // const cpus = os.cpus()
@@ -140,7 +144,6 @@ app.get('/files', async (req, res, next) => {
 })
 
 
-
 app.get('/fileSizeInfo', async (req, res, next) => {
 
     let response = {}
@@ -155,7 +158,6 @@ app.get('/fileSizeInfo', async (req, res, next) => {
         res.send(response)
     }
 })
-
 
 
 io.on('connection', async (socket) => {
@@ -203,20 +205,21 @@ io.on('connection', async (socket) => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
-
-            // console.log('FILE:',files)
-            let file = files[1]
-            if (!file) {
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.affiliateProductProgramData.length === 0) {
                 console.log(`no file AffiliateProductProgram in folder:${config.recipe.folder}`)
                 return
             }
+            let affiliateProductProgramFile = filesInfo.affiliateProductProgramData[0].file
+
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${affiliateProductProgramFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFileAffiliateProductProgram`)
             });
             ss(socket).emit('sendingAffiliateProductProgram', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(affiliateProductProgramFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFileAffiliateProductProgramError:', e)
@@ -230,20 +233,20 @@ io.on('connection', async (socket) => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
-
-            // console.log('FILE:',files)
-            let file = files[0]
-            if (!file) {
-                console.log(`no files AcProducts in folder:${config.recipe.folder}`)
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.acProductsData.length === 0) {
+                console.log(`no file AcProducts in folder:${config.recipe.folder}`)
                 return
             }
+            let acProductsDataFile = filesInfo.acProductsData[0].file
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${acProductsDataFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFileAcProducts`)
             });
             ss(socket).emit('sendingAcProducts', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(acProductsDataFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFileAcProductsError:', e)
@@ -252,25 +255,25 @@ io.on('connection', async (socket) => {
 
     })
 
-// refCodesData
     socket.on('sendingRefCodes', async () => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
 
-            // console.log('FILE:',files)
-            let file = files[2]
-            if (!file) {
-                console.log(`no files  RefCodes in folder:${config.recipe.folder}`)
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.refCodesData.length === 0) {
+                console.log(`no file refCodesData in folder:${config.recipe.folder}`)
                 return
             }
+            let refCodesDataFile = filesInfo.refCodesData[0].file
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${refCodesDataFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFilesRefCodes`)
             });
             ss(socket).emit('sendingRefCodes', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(refCodesDataFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFilesRefCodesError:', e)
