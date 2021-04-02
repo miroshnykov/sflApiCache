@@ -163,9 +163,9 @@ app.get('/fileSizeInfo', async (req, res, next) => {
 io.on('connection', async (socket) => {
 
 
-    socket.on('fileSizeInfo', async (fileSizeInfo) => {
+    socket.on('filesSizeRefCodes', async (fileSizeInfo) => {
         try {
-            let fileSizeInfoCache = await getDataCache('fileSizeInfo') || []
+            let fileSizeInfoCache = await getDataCache('filesSizeRefCodes') || []
 
             console.log(`FileSizeInfoCache:${JSON.stringify(fileSizeInfoCache)}`)
             if (fileSizeInfoCache.length === 0) {
@@ -178,7 +178,7 @@ io.on('connection', async (socket) => {
             }
 
             console.log(`FileSize is different, send to socket id { ${socket.id} }, fileSizeInfoCache:{ ${JSON.stringify(fileSizeInfoCache)} }`)
-            io.to(socket.id).emit("fileSizeInfo", fileSizeInfoCache)
+            io.to(socket.id).emit("filesSizeRefCodes", fileSizeInfoCache)
 
         } catch (e) {
             console.log('fileSizeInfoError:', e)
@@ -228,7 +228,6 @@ io.on('connection', async (socket) => {
 
     })
 
-    // acProductsData
     socket.on('sendingAcProducts', async () => {
 
         try {
@@ -312,8 +311,7 @@ const {
 
 
 setInterval(setFileSizeInfo, 900000) // 900000 -> 15 min
-setTimeout(setFileSizeInfo, 60000) // 60000 -> 1 min
-
+setTimeout(setFileSizeInfo, 240000) // 240000 -> 4 min
 
 setInterval(setRecipeFilesAffiliateProductProgram, 2472000) // 2472000 -> 41.2 min
 // setInterval(setRecipeFilesAffiliateProductProgram, 11000000) // 11000000 -> 3.05 h
