@@ -31,36 +31,54 @@ app.get('/health', (req, res, next) => {
     res.send('Ok')
 })
 
-// http://localhost:8092/forceCreateRecipe
+const {
+    setFileSizeInfo,
+    setRecipeFilesAffiliateProductProgram,
+    setRecipeFilesAcProducts,
+    setRecipeFilesRefCodes,
+} = require(`./crons/recipes`)
 
-const {getRefCodes, getAcProducts, getAffiliateProductProgram} = require('./db/dataDb')
-app.get('/forceCreateRecipe', async (req, res, next) => {
+
+
+// http://localhost:8092/forceCreateRecipeAffiliateProductProgram
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeAffiliateProductProgram
+
+app.get('/forceCreateRecipeAffiliateProductProgram', async (req, res, next) => {
     let response = {}
     try {
+        let timeMs = 9000
+        setTimeout(setRecipeFilesAffiliateProductProgram, timeMs)
+        response.run = `addedToQueSetRecipeFilesAffiliateProductProgram-time-${timeMs}`
+        res.send(response)
+    } catch (e) {
+        response.err = 'error recipe' + JSON.stringify(e)
+        res.send(response)
+    }
+})
 
-        // let refCodes = await getRefCodes()
-        // let acProducts = await getAcProducts()
-        // let affiliateProductProgram = await getAffiliateProductProgram()
-        // response.refCodes = refCodes
-        // response.acProducts = acProducts
-        // response.affiliateProductProgram = affiliateProductProgram
-        // res.send(response)
-        // return
-        let files = await getLocalFiles(config.recipe.folder)
-        // console.log('forceCreateRecipeFileDebug:', files)
-        // console.log('forceCreateRecipeRecipe:', config.recipe)
-        response.files = files
-        response.configRecipe = config.recipe
+// http://localhost:8092/forceCreateRecipeAcProducts
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeAcProducts
+app.get('/forceCreateRecipeAcProducts', async (req, res, next) => {
+    let response = {}
+    try {
+        let timeMs = 9000
+        setTimeout(setRecipeFilesAcProducts, timeMs)
+        response.run = `addedToQueSetRecipeFilesAcProducts-time-${timeMs}`
+        res.send(response)
+    } catch (e) {
+        response.err = 'error recipe' + JSON.stringify(e)
+        res.send(response)
+    }
+})
 
-        let filesInfo = parseFiles(files)
-
-        response.deleted = []
-        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
-            await deleteFile(affiliateProductProgram.file)
-            response.deleted.push(affiliateProductProgram.file)
-        }
-
-        await createRecipeAffiliateProductProgram()
+// http://localhost:8092/forceCreateRecipeRefCodes
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeRefCodes
+app.get('/forceCreateRecipeRefCodes', async (req, res, next) => {
+    let response = {}
+    try {
+        let timeMs = 9000
+        setTimeout(setRecipeFilesRefCodes, timeMs)
+        response.run = `addedToQueSetRecipeFilesRefCodes-time-${timeMs}`
         res.send(response)
     } catch (e) {
         response.err = 'error recipe' + JSON.stringify(e)
@@ -71,6 +89,7 @@ app.get('/forceCreateRecipe', async (req, res, next) => {
 
 // http://localhost:8092/files
 // https://sfl-api-cache-stage1.surge.systems/files
+// https://sfl-api-cache.surge.systems/files
 app.get('/files', async (req, res, next) => {
     let response = {}
 
@@ -302,12 +321,6 @@ server.listen({port: config.port}, () => {
     console.log(`\n🚀\x1b[35m Server ready at http://localhost:${config.port},  Using node ${process.version}, env:${config.env} \x1b[0m \n`)
 })
 
-const {
-    setFileSizeInfo,
-    setRecipeFilesAffiliateProductProgram,
-    setRecipeFilesAcProducts,
-    setRecipeFilesRefCodes,
-} = require(`./crons/recipes`)
 
 
 setInterval(setFileSizeInfo, 900000) // 900000 -> 15 min
