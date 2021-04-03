@@ -38,7 +38,8 @@ const getAffiliateProductProgram = async () => {
                 program_id as affiliateProductProgramId, 
                 affiliate_id as affiliatesId, 
                 product_id as productId
-            FROM affiliate_product_programs                                              
+            FROM affiliate_product_programs  
+            WHERE a.date_added > 1488058665                                             
         `)
         await dbMysql.end()
         // console.log(`\nget offerInfo count: ${result.length}`)
