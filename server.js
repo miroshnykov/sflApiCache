@@ -39,7 +39,6 @@ const {
 } = require(`./crons/recipes`)
 
 
-
 // http://localhost:8092/forceCreateRecipeAffiliateProductProgram
 // https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeAffiliateProductProgram
 
@@ -91,75 +90,9 @@ app.get('/forceCreateRecipeRefCodes', async (req, res, next) => {
 // https://sfl-api-cache-stage1.surge.systems/files
 // https://sfl-api-cache.surge.systems/files
 app.get('/files', async (req, res, next) => {
-    let response = {}
+    let resp = await checkFilesExists()
+    res.send(resp)
 
-    try {
-        let files = await getLocalFiles(config.recipe.folder)
-
-        if (files.length === 0) {
-            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)}`
-            res.send(response)
-            return
-        }
-        let filesInfo = parseFiles(files)
-        response.files = files
-
-        let refCodeInfo = []
-        let affiliateProductProgramInfo = []
-        let acProductsInfo = []
-        for (const refCodeFile of filesInfo.refCodesData) {
-            let sizerefCodeFileSize = await getFileSize(refCodeFile.file)
-
-            refCodeInfo.push(
-                {
-                    index: refCodeFile.index,
-                    file: refCodeFile.file,
-                    size: sizerefCodeFileSize
-                })
-        }
-
-        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
-            let sizeAffiliateProductProgram = await getFileSize(affiliateProductProgram.file)
-
-            affiliateProductProgramInfo.push(
-                {
-                    index: affiliateProductProgram.index,
-                    file: affiliateProductProgram.file,
-                    size: sizeAffiliateProductProgram
-                })
-        }
-
-        for (const acProducts of filesInfo.acProductsData) {
-            let sizeAcProducts = await getFileSize(acProducts.file)
-            acProductsInfo.push(
-                {
-                    index: acProducts.index,
-                    file: acProducts.file,
-                    size: sizeAcProducts
-                })
-        }
-
-        response.refCodeInfo = refCodeInfo
-        response.affiliateProductProgramInfo = affiliateProductProgramInfo
-        response.acProductsInfo = acProductsInfo
-
-
-        const computerName = os.hostname()
-        // const cpus = os.cpus()
-        // const freemem = os.freemem()
-        // const userInfo = os.userInfo()
-        // const release = os.release()
-        response.computerName = computerName || 0
-        // response.cpus = cpus || 0
-        // response.freemem = freemem || 0
-        // response.userInfo = userInfo || 0
-        // response.release = release || 0
-
-        res.send(response)
-    } catch (e) {
-        response.err = 'error files' + JSON.stringify(e)
-        res.send(response)
-    }
 })
 
 
@@ -322,7 +255,86 @@ server.listen({port: config.port}, () => {
 })
 
 
+const checkFilesExists = async () => {
+    let response = {}
+    try {
 
+        let files = await getLocalFiles(config.recipe.folder)
+
+        if (files.length === 0) {
+            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)}`
+            metrics.influxdb(200, `FileDoesNotExistsNoFiles`)
+            return response
+        }
+        let filesInfo = parseFiles(files)
+        response.files = files
+
+        let refCodeInfo = []
+        let affiliateProductProgramInfo = []
+        let acProductsInfo = []
+        for (const refCodeFile of filesInfo.refCodesData) {
+            let sizerefCodeFileSize = await getFileSize(refCodeFile.file)
+
+            refCodeInfo.push(
+                {
+                    index: refCodeFile.index,
+                    file: refCodeFile.file,
+                    size: sizerefCodeFileSize
+                })
+        }
+
+        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
+            let sizeAffiliateProductProgram = await getFileSize(affiliateProductProgram.file)
+
+            affiliateProductProgramInfo.push(
+                {
+                    index: affiliateProductProgram.index,
+                    file: affiliateProductProgram.file,
+                    size: sizeAffiliateProductProgram
+                })
+        }
+
+        for (const acProducts of filesInfo.acProductsData) {
+            let sizeAcProducts = await getFileSize(acProducts.file)
+            acProductsInfo.push(
+                {
+                    index: acProducts.index,
+                    file: acProducts.file,
+                    size: sizeAcProducts
+                })
+        }
+
+        response.refCodeInfo = refCodeInfo
+        response.affiliateProductProgramInfo = affiliateProductProgramInfo
+        response.acProductsInfo = acProductsInfo
+
+        if (refCodeInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsRefCodeInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheRefCodeInfoSize-${refCodeInfo[0].size}`)
+        }
+
+        if (affiliateProductProgramInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsAffiliateProductProgramInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheAffiliateProductProgramInfoSize-${affiliateProductProgramInfo[0].size}`)
+        }
+
+        if (acProductsInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsAcProductsInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheAcProductsInfoSize-${acProductsInfo[0].size}`)
+        }
+        const computerName = os.hostname()
+        response.computerName = computerName || 0
+
+        return response
+    } catch (e) {
+        response.err = 'error files' + JSON.stringify(e)
+        metrics.influxdb(200, `FileExistsOnSflApiCacheNoFiles`)
+        return response
+    }
+}
 setInterval(setFileSizeInfo, 900000) // 900000 -> 15 min
 setTimeout(setFileSizeInfo, 240000) // 240000 -> 4 min
 
@@ -337,5 +349,6 @@ setInterval(setRecipeFilesRefCodes, 3012000) // 3012000 -> 50.2 min
 setTimeout(setRecipeFilesRefCodes, 180000) // 180000 -> 3 min
 
 
+setInterval(checkFilesExists, 600000) // 600000 -> 10 min
 
 const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay))
