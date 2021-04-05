@@ -56,7 +56,9 @@ const getAffiliateProductProgram = async () => {
 const getAcProducts = async () => {
     try {
         let result = await dbMysql.query(` 
-                SELECT program_id as programId,id, name AS productName
+                SELECT program_id as programId,
+                       id, 
+                       name AS productName
                 FROM ac_products                                            
         `)
         await dbMysql.end()
