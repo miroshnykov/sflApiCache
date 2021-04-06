@@ -6,7 +6,7 @@ const socketIO = require('socket.io')
 const app = express()
 const server = http.createServer(app);
 const io = socketIO(server)
-const {getFileSize, formatByteSize} = require('./lib/helper')
+const {getFileSize, formatByteSize, parseFiles} = require('./lib/helper')
 const {
     getLocalFiles
 } = require('./lib/zipRecipe')
@@ -31,63 +31,54 @@ app.get('/health', (req, res, next) => {
     res.send('Ok')
 })
 
-// http://localhost:8092/forceCreateRecipe
+const {
+    setFileSizeInfo,
+    setRecipeFilesAffiliateProductProgram,
+    setRecipeFilesAcProducts,
+    setRecipeFilesRefCodes,
+} = require(`./crons/recipes`)
 
-const {getRefCodes, getAcProducts, getAffiliateProductProgram} = require('./db/dataDb')
-app.get('/forceCreateRecipe', async (req, res, next) => {
+
+// http://localhost:8092/forceCreateRecipeAffiliateProductProgram
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeAffiliateProductProgram
+
+app.get('/forceCreateRecipeAffiliateProductProgram', async (req, res, next) => {
     let response = {}
     try {
-
-        let refCodes = await getRefCodes()
-        let acProducts = await getAcProducts()
-        let affiliateProductProgram = await getAffiliateProductProgram()
-        response.refCodes = refCodes
-        // response.acProducts = acProducts
-        response.affiliateProductProgram = affiliateProductProgram
-        // res.send(response)
-        // return
-        let files = await getLocalFiles(config.recipe.folder)
-        console.log('forceCreateRecipeFileDebug:', files)
-        console.log('forceCreateRecipeRecipe:', config.recipe)
-        response.files = files
-        response.configRecipe = config.recipe
-
-        if (files.length === 0) {
-            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)} created `
-            await createRecipeAffiliateProductProgram()
-
-            await waitFor(5000)
-
-            let files = await getLocalFiles(config.recipe.folder)
-            response.filesJustCreated = files
-
-            let size1AffiliateProductProgram = await getFileSize(files[0])// affWebsite
-            // response.files1Size = formatByteSize(size1AffWe)
-            // response.files2Size = formatByteSize(size2Aff)
-            // response.files3Size = formatByteSize(size3Camp)
-            // response.files4Size = formatByteSize(size4Offer)
-            response.sizeAffiliateProductProgram = size1AffiliateProductProgram
-
-            res.send(response)
-            return
-        }
-        let file1 = files[0]
-        if (file1) {
-            await deleteFile(file1)
-            response.file1Deleted = file1
-        }
-
-        await createRecipeAffiliateProductProgram()
-
-        if (file1 ) {
-            response.files1 = `${files[0]}`
-            response.done = 'recipe created'
-        } else {
-            response.done = 'files does not exists. but Recipe created first time '
-        }
-
+        let timeMs = 9000
+        setTimeout(setRecipeFilesAffiliateProductProgram, timeMs)
+        response.run = `addedToQueSetRecipeFilesAffiliateProductProgram-time-${timeMs}`
         res.send(response)
+    } catch (e) {
+        response.err = 'error recipe' + JSON.stringify(e)
+        res.send(response)
+    }
+})
 
+// http://localhost:8092/forceCreateRecipeAcProducts
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeAcProducts
+app.get('/forceCreateRecipeAcProducts', async (req, res, next) => {
+    let response = {}
+    try {
+        let timeMs = 9000
+        setTimeout(setRecipeFilesAcProducts, timeMs)
+        response.run = `addedToQueSetRecipeFilesAcProducts-time-${timeMs}`
+        res.send(response)
+    } catch (e) {
+        response.err = 'error recipe' + JSON.stringify(e)
+        res.send(response)
+    }
+})
+
+// http://localhost:8092/forceCreateRecipeRefCodes
+// https://sfl-api-cache-stage1.surge.systems/forceCreateRecipeRefCodes
+app.get('/forceCreateRecipeRefCodes', async (req, res, next) => {
+    let response = {}
+    try {
+        let timeMs = 9000
+        setTimeout(setRecipeFilesRefCodes, timeMs)
+        response.run = `addedToQueSetRecipeFilesRefCodes-time-${timeMs}`
+        res.send(response)
     } catch (e) {
         response.err = 'error recipe' + JSON.stringify(e)
         res.send(response)
@@ -97,48 +88,12 @@ app.get('/forceCreateRecipe', async (req, res, next) => {
 
 // http://localhost:8092/files
 // https://sfl-api-cache-stage1.surge.systems/files
+// https://sfl-api-cache.surge.systems/files
 app.get('/files', async (req, res, next) => {
-    let response = {}
+    let resp = await checkFilesExists()
+    res.send(resp)
 
-    try {
-        let files = await getLocalFiles(config.recipe.folder)
-
-        if (files.length === 0) {
-            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)}`
-            res.send(response)
-            return
-        }
-
-        response.files = files
-        response.files1 = files[0]
-        response.files2 = files[1]
-        response.files3 = files[2]
-        let sizeAcProducts = await getFileSize(files[0])
-        let sizeAffiliateProductProgram = await getFileSize(files[1])
-        let sizeRefCodes = await getFileSize(files[2])
-        response.sizeAcProducts = sizeAcProducts
-        response.sizeAffiliateProductProgram = sizeAffiliateProductProgram
-        response.sizeRefCodes = sizeRefCodes
-        response.countsOfClients = clients.length || 0
-
-        const computerName = os.hostname()
-        // const cpus = os.cpus()
-        // const freemem = os.freemem()
-        // const userInfo = os.userInfo()
-        // const release = os.release()
-        response.computerName = computerName || 0
-        // response.cpus = cpus || 0
-        // response.freemem = freemem || 0
-        // response.userInfo = userInfo || 0
-        // response.release = release || 0
-
-        res.send(response)
-    } catch (e) {
-        response.err = 'error files' + JSON.stringify(e)
-        res.send(response)
-    }
 })
-
 
 
 app.get('/fileSizeInfo', async (req, res, next) => {
@@ -157,13 +112,12 @@ app.get('/fileSizeInfo', async (req, res, next) => {
 })
 
 
-
 io.on('connection', async (socket) => {
 
 
-    socket.on('fileSizeInfo', async (fileSizeInfo) => {
+    socket.on('filesSizeRefCodes', async (fileSizeInfo) => {
         try {
-            let fileSizeInfoCache = await getDataCache('fileSizeInfo') || []
+            let fileSizeInfoCache = await getDataCache('filesSizeRefCodes') || []
 
             console.log(`FileSizeInfoCache:${JSON.stringify(fileSizeInfoCache)}`)
             if (fileSizeInfoCache.length === 0) {
@@ -176,7 +130,7 @@ io.on('connection', async (socket) => {
             }
 
             console.log(`FileSize is different, send to socket id { ${socket.id} }, fileSizeInfoCache:{ ${JSON.stringify(fileSizeInfoCache)} }`)
-            io.to(socket.id).emit("fileSizeInfo", fileSizeInfoCache)
+            io.to(socket.id).emit("filesSizeRefCodes", fileSizeInfoCache)
 
         } catch (e) {
             console.log('fileSizeInfoError:', e)
@@ -203,20 +157,21 @@ io.on('connection', async (socket) => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
-
-            // console.log('FILE:',files)
-            let file = files[1]
-            if (!file) {
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.affiliateProductProgramData.length === 0) {
                 console.log(`no file AffiliateProductProgram in folder:${config.recipe.folder}`)
                 return
             }
+            let affiliateProductProgramFile = filesInfo.affiliateProductProgramData[0].file
+
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${affiliateProductProgramFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFileAffiliateProductProgram`)
             });
             ss(socket).emit('sendingAffiliateProductProgram', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(affiliateProductProgramFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFileAffiliateProductProgramError:', e)
@@ -225,25 +180,24 @@ io.on('connection', async (socket) => {
 
     })
 
-    // acProductsData
     socket.on('sendingAcProducts', async () => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
-
-            // console.log('FILE:',files)
-            let file = files[0]
-            if (!file) {
-                console.log(`no files AcProducts in folder:${config.recipe.folder}`)
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.acProductsData.length === 0) {
+                console.log(`no file AcProducts in folder:${config.recipe.folder}`)
                 return
             }
+            let acProductsDataFile = filesInfo.acProductsData[0].file
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${acProductsDataFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFileAcProducts`)
             });
             ss(socket).emit('sendingAcProducts', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(acProductsDataFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFileAcProductsError:', e)
@@ -252,25 +206,25 @@ io.on('connection', async (socket) => {
 
     })
 
-// refCodesData
     socket.on('sendingRefCodes', async () => {
 
         try {
             let files = await getLocalFiles(config.recipe.folder)
 
-            // console.log('FILE:',files)
-            let file = files[2]
-            if (!file) {
-                console.log(`no files  RefCodes in folder:${config.recipe.folder}`)
+            let filesInfo = parseFiles(files)
+            // console.log('filesInfo:', filesInfo)
+            if (filesInfo.refCodesData.length === 0) {
+                console.log(`no file refCodesData in folder:${config.recipe.folder}`)
                 return
             }
+            let refCodesDataFile = filesInfo.refCodesData[0].file
             let stream = ss.createStream();
             stream.on('end', () => {
-                console.log(`file:${file} sent to soket ID:${socket.id}`);
+                console.log(`file:${refCodesDataFile} sent to soket ID:${socket.id}`);
                 metrics.influxdb(200, `sendFilesRefCodes`)
             });
             ss(socket).emit('sendingRefCodes', stream);
-            fs.createReadStream(file).pipe(stream);
+            fs.createReadStream(refCodesDataFile).pipe(stream);
 
         } catch (e) {
             console.log('sendFilesRefCodesError:', e)
@@ -300,17 +254,89 @@ server.listen({port: config.port}, () => {
     console.log(`\n🚀\x1b[35m Server ready at http://localhost:${config.port},  Using node ${process.version}, env:${config.env} \x1b[0m \n`)
 })
 
-const {
-    setFileSizeInfo,
-    setRecipeFilesAffiliateProductProgram,
-    setRecipeFilesAcProducts,
-    setRecipeFilesRefCodes,
-} = require(`./crons/recipes`)
 
+const checkFilesExists = async () => {
+    let response = {}
+    try {
 
+        let files = await getLocalFiles(config.recipe.folder)
+
+        if (files.length === 0) {
+            response.noFiles = `no files in folder:${JSON.stringify(config.recipe)}`
+            metrics.influxdb(200, `FileDoesNotExistsNoFiles`)
+            return response
+        }
+        let filesInfo = parseFiles(files)
+        response.files = files
+
+        let refCodeInfo = []
+        let affiliateProductProgramInfo = []
+        let acProductsInfo = []
+        for (const refCodeFile of filesInfo.refCodesData) {
+            let sizerefCodeFileSize = await getFileSize(refCodeFile.file)
+
+            refCodeInfo.push(
+                {
+                    index: refCodeFile.index,
+                    file: refCodeFile.file,
+                    size: sizerefCodeFileSize
+                })
+        }
+
+        for (const affiliateProductProgram of filesInfo.affiliateProductProgramData) {
+            let sizeAffiliateProductProgram = await getFileSize(affiliateProductProgram.file)
+
+            affiliateProductProgramInfo.push(
+                {
+                    index: affiliateProductProgram.index,
+                    file: affiliateProductProgram.file,
+                    size: sizeAffiliateProductProgram
+                })
+        }
+
+        for (const acProducts of filesInfo.acProductsData) {
+            let sizeAcProducts = await getFileSize(acProducts.file)
+            acProductsInfo.push(
+                {
+                    index: acProducts.index,
+                    file: acProducts.file,
+                    size: sizeAcProducts
+                })
+        }
+
+        response.refCodeInfo = refCodeInfo
+        response.affiliateProductProgramInfo = affiliateProductProgramInfo
+        response.acProductsInfo = acProductsInfo
+
+        if (refCodeInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsRefCodeInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheRefCodeInfoSize-${refCodeInfo[0].size}`)
+        }
+
+        if (affiliateProductProgramInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsAffiliateProductProgramInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheAffiliateProductProgramInfoSize-${affiliateProductProgramInfo[0].size}`)
+        }
+
+        if (acProductsInfo.length === 0) {
+            metrics.influxdb(200, `FileDoesNotExistsAcProductsInfo`)
+        } else {
+            metrics.influxdb(200, `FileOnSflApiCacheAcProductsInfoSize-${acProductsInfo[0].size}`)
+        }
+        const computerName = os.hostname()
+        response.computerName = computerName || 0
+
+        return response
+    } catch (e) {
+        response.err = 'error files' + JSON.stringify(e)
+        metrics.influxdb(200, `FileExistsOnSflApiCacheNoFiles`)
+        return response
+    }
+}
 setInterval(setFileSizeInfo, 900000) // 900000 -> 15 min
-setTimeout(setFileSizeInfo, 60000) // 60000 -> 1 min
-
+setTimeout(setFileSizeInfo, 240000) // 240000 -> 4 min
 
 setInterval(setRecipeFilesAffiliateProductProgram, 2472000) // 2472000 -> 41.2 min
 // setInterval(setRecipeFilesAffiliateProductProgram, 11000000) // 11000000 -> 3.05 h
@@ -323,5 +349,6 @@ setInterval(setRecipeFilesRefCodes, 3012000) // 3012000 -> 50.2 min
 setTimeout(setRecipeFilesRefCodes, 180000) // 180000 -> 3 min
 
 
+setInterval(checkFilesExists, 600000) // 600000 -> 10 min
 
 const waitFor = delay => new Promise(resolve => setTimeout(resolve, delay))

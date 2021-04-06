@@ -1,3 +1,4 @@
+const config = require('plain-config')()
 let dbMysql = require('./mysqlAdcenterDb').get()
 
 const getRefCodes = async () => {
@@ -31,6 +32,9 @@ const getRefCodes = async () => {
 
 
 const getAffiliateProductProgram = async () => {
+
+    let timeStartFrom = config.env === 'staging' ? 1488058665 : 1427900440
+
     try {
         let result = await dbMysql.query(` 
 
@@ -38,7 +42,8 @@ const getAffiliateProductProgram = async () => {
                 program_id as affiliateProductProgramId, 
                 affiliate_id as affiliatesId, 
                 product_id as productId
-            FROM affiliate_product_programs                                              
+            FROM affiliate_product_programs  
+            WHERE date_added > ${timeStartFrom}                                             
         `)
         await dbMysql.end()
         // console.log(`\nget offerInfo count: ${result.length}`)
@@ -51,7 +56,9 @@ const getAffiliateProductProgram = async () => {
 const getAcProducts = async () => {
     try {
         let result = await dbMysql.query(` 
-                SELECT program_id as programId,id, name AS productName
+                SELECT program_id as programId,
+                       id, 
+                       name AS productName
                 FROM ac_products                                            
         `)
         await dbMysql.end()

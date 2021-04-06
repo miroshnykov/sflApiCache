@@ -59,8 +59,8 @@ const createRecipeAffiliateProductProgram = async () => {
             }
         );
     } catch (e) {
-        metrics.influxdb(500, `createRecipeCampaignError-${computerName}`)
-        console.log('createRecipeCampaignError:', e)
+        metrics.influxdb(500, `createRecipeAffiliateProductProgramError-${computerName}`)
+        console.log('createRecipeAffiliateProductProgramError:', e)
     }
 }
 
