@@ -4,8 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "prod": "node server.js --conf=/run/secrets/sfl-api-cache-prod.js",
-    "stage1": "NODE_ENV=staging node server.js --conf=/run/secrets/sfl-api-cache-stage1.js"
+    "prod": "node server.js --conf=/run/secrets/sfl-api-cache.js",
+    "stage1": "NODE_ENV=staging node server.js --conf=/run/secrets/sfl-api-cache.js"
   },
   "author": "",
   "license": "ISC",
